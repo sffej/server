@@ -26,10 +26,9 @@ static int loaded= 0;
 
 static int auth(MYSQL_PLUGIN_VIO *vio, MYSQL_SERVER_AUTH_INFO *info)
 {
-  unsigned long long out_len;
   unsigned int i;
   int pkt_len;
-  unsigned char *pkt, reply[CRYPTO_BYTES + NONCE_BYTES], out[NONCE_BYTES];
+  unsigned char *pkt, reply[CRYPTO_BYTES + NONCE_BYTES];
   unsigned long *nonce= (unsigned long*)(reply + CRYPTO_BYTES);
   unsigned char pk[CRYPTO_PUBLICKEYBYTES];
   char pw[PASSWORD_LEN_BUF];
@@ -57,7 +56,7 @@ static int auth(MYSQL_PLUGIN_VIO *vio, MYSQL_SERVER_AUTH_INFO *info)
     return CR_AUTH_HANDSHAKE;
   memcpy(reply, pkt, CRYPTO_BYTES);
 
-  if (crypto_sign_open(out, &out_len, reply, sizeof(reply), pk))
+  if (crypto_sign_open(reply, sizeof(reply), pk))
     return CR_ERROR;
 
   return CR_OK;
@@ -105,14 +104,14 @@ char *ed25519_password(UDF_INIT *initid __attribute__((unused)),
                        UDF_ARGS *args, char *result, ulong *length,
                        char *is_null, char *error __attribute__((unused)))
 {
-  unsigned char sk[CRYPTO_SECRETKEYBYTES], pk[CRYPTO_PUBLICKEYBYTES];
+  unsigned char pk[CRYPTO_PUBLICKEYBYTES];
 
   if ((*is_null= !args->args[0]))
     return NULL;
 
   *length= PASSWORD_LEN;
-  pw_to_sk_and_pk(args->args[0], args->lengths[0], sk, pk);
-  base64_encode(pk, sizeof(pk), result);
+  crypto_sign_keypair(pk, (unsigned char*)args->args[0], args->lengths[0]);
+  base64_encode(pk, CRYPTO_PUBLICKEYBYTES, result);
   return result;
 }
 
