@@ -2912,6 +2912,12 @@ public:
     delete_dynamic(&plugins);
   }
 
+  virtual class Query_arena *query_arena()
+  {
+    DBUG_ASSERT(0);
+    return NULL;
+  }
+
   void start(THD *thd);
 
   const char *substatement_query(THD *thd) const;
@@ -3129,7 +3135,8 @@ public:
   bool sp_handler_declaration_init(THD *thd, int type);
   bool sp_handler_declaration_finalize(THD *thd, int type);
 
-  bool sp_declare_cursor(THD *thd, const LEX_STRING name, LEX *cursor_stmt,
+  bool sp_declare_cursor(THD *thd, const LEX_STRING name,
+                         class sp_lex_cursor *cursor_stmt,
                          sp_pcontext *param_ctx);
   bool sp_open_cursor(THD *thd, const LEX_STRING name,
                       List<sp_assignment_lex> *parameters);
